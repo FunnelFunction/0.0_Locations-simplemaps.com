@@ -1,168 +1,152 @@
 /**
- * USA Cities Database
- * Comprehensive database of US cities, counties, and states
+ * USA Cities Database - CSV Parser
  *
- * Data includes:
- * - 31,000+ cities across all 50 states, DC, and territories
- * - Geographic coordinates (latitude/longitude)
- * - ZIP codes
- * - Population and density data
- * - Timezone information
- * - County associations
+ * Simple CSV-based database matching the format from:
+ * https://github.com/grammakov/USA-cities-and-states
+ *
+ * Main files:
+ * - us_cities_states_counties.csv (basic data, pipe-delimited)
+ * - us_cities_states_counties_zips.csv (extended with ZIP codes, coordinates, population)
  */
 
-const cities = require('./cities.json');
-const states = require('./states.json');
-const counties = require('./counties.json');
+const fs = require('fs');
+const path = require('path');
 
 /**
- * Get all cities
- * @returns {Array} Array of all city objects
+ * Parse a pipe-delimited CSV file
+ * @param {string} filename - Name of the CSV file to parse
+ * @returns {Array} Array of parsed rows
  */
-function getAllCities() {
-  return cities;
+function parseCSV(filename) {
+  const filePath = path.join(__dirname, filename);
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const lines = content.trim().split('\n');
+
+  // First line is header
+  const headers = lines[0].split('|').map(h => h.trim());
+
+  // Parse remaining lines
+  const data = [];
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split('|');
+    const row = {};
+    headers.forEach((header, index) => {
+      row[header] = values[index] || '';
+    });
+    data.push(row);
+  }
+
+  return data;
 }
 
 /**
- * Get all states
- * @returns {Array} Array of all state objects
+ * Load basic cities data
+ * Format: City|State short|State full|County|City alias
  */
-function getAllStates() {
-  return states;
+function loadCities() {
+  return parseCSV('us_cities_states_counties.csv');
 }
 
 /**
- * Get all counties
- * @returns {Array} Array of all county objects
+ * Load extended cities data with ZIP codes
+ * Format: City|State short|State full|County|Latitude|Longitude|ZIP codes|Population|Density|Timezone
  */
-function getAllCounties() {
-  return counties;
+function loadCitiesExtended() {
+  return parseCSV('us_cities_states_counties_zips.csv');
 }
 
 /**
- * Get cities by state
- * @param {string} stateId - Two-letter state code (e.g., 'CA', 'NY')
- * @returns {Array} Array of cities in the specified state
+ * Load states data
  */
-function getCitiesByState(stateId) {
-  return cities.filter(city => city.state_id === stateId.toUpperCase());
+function loadStates() {
+  return parseCSV('states.csv');
 }
 
 /**
- * Get cities by state name
- * @param {string} stateName - Full state name (e.g., 'California', 'New York')
- * @returns {Array} Array of cities in the specified state
+ * Load counties data
+ */
+function loadCounties() {
+  return parseCSV('counties.csv');
+}
+
+/**
+ * Get cities by state (using basic data)
+ * @param {string} stateCode - Two-letter state code (e.g., 'CA', 'NY')
+ * @returns {Array} Cities in the state
+ */
+function getCitiesByState(stateCode) {
+  const cities = loadCities();
+  return cities.filter(city => city['State short'] === stateCode.toUpperCase());
+}
+
+/**
+ * Get cities by state name (using basic data)
+ * @param {string} stateName - Full state name (e.g., 'California')
+ * @returns {Array} Cities in the state
  */
 function getCitiesByStateName(stateName) {
+  const cities = loadCities();
   return cities.filter(city =>
-    city.state_name.toLowerCase() === stateName.toLowerCase()
+    city['State full'].toLowerCase() === stateName.toLowerCase()
   );
 }
 
 /**
- * Get counties by state
- * @param {string} stateId - Two-letter state code (e.g., 'CA', 'NY')
- * @returns {Array} Array of counties in the specified state
+ * Search cities by name (using basic data)
+ * @param {string} searchTerm - City name to search for
+ * @returns {Array} Matching cities
  */
-function getCountiesByState(stateId) {
-  return counties.filter(county => county.state_id === stateId.toUpperCase());
-}
-
-/**
- * Search cities by name
- * @param {string} cityName - City name to search for (case-insensitive, partial match)
- * @returns {Array} Array of matching cities
- */
-function searchCities(cityName) {
-  const search = cityName.toLowerCase();
+function searchCities(searchTerm) {
+  const cities = loadCities();
+  const term = searchTerm.toLowerCase();
   return cities.filter(city =>
-    city.city_ascii.toLowerCase().includes(search)
+    city['City'].toLowerCase().includes(term)
   );
 }
 
 /**
- * Get city by exact name and state
- * @param {string} cityName - City name
- * @param {string} stateId - Two-letter state code (e.g., 'CA', 'NY')
- * @returns {Object|null} City object or null if not found
- */
-function getCity(cityName, stateId) {
-  return cities.find(city =>
-    city.city_ascii.toLowerCase() === cityName.toLowerCase() &&
-    city.state_id === stateId.toUpperCase()
-  ) || null;
-}
-
-/**
- * Get cities by ZIP code
+ * Get cities by ZIP code (using extended data)
  * @param {string} zipCode - ZIP code to search for
- * @returns {Array} Array of cities containing this ZIP code
+ * @returns {Array} Cities containing this ZIP code
  */
 function getCitiesByZip(zipCode) {
-  return cities.filter(city =>
-    city.zips && city.zips.split(',').includes(zipCode)
-  );
-}
-
-/**
- * Get cities within radius of coordinates
- * @param {number} lat - Latitude
- * @param {number} lng - Longitude
- * @param {number} radiusMiles - Radius in miles
- * @returns {Array} Array of cities within the radius
- */
-function getCitiesNearby(lat, lng, radiusMiles) {
-  const radiusInDegrees = radiusMiles / 69; // Rough conversion
-
+  const cities = loadCitiesExtended();
   return cities.filter(city => {
-    const cityLat = parseFloat(city.lat);
-    const cityLng = parseFloat(city.lng);
-    const distance = Math.sqrt(
-      Math.pow(cityLat - lat, 2) + Math.pow(cityLng - lng, 2)
-    );
-    return distance <= radiusInDegrees;
+    const zips = city['ZIP codes'] || '';
+    return zips.split(',').map(z => z.trim()).includes(zipCode);
   });
 }
 
 /**
- * Get state by ID
- * @param {string} stateId - Two-letter state code (e.g., 'CA', 'NY')
- * @returns {Object|null} State object or null if not found
+ * Get all unique states
+ * @returns {Array} Array of state objects
  */
-function getState(stateId) {
-  return states.find(state =>
-    state.state_id === stateId.toUpperCase()
-  ) || null;
+function getAllStates() {
+  return loadStates();
 }
 
 /**
- * Get state by name
- * @param {string} stateName - Full state name (e.g., 'California')
- * @returns {Object|null} State object or null if not found
+ * Get all counties
+ * @returns {Array} Array of county objects
  */
-function getStateByName(stateName) {
-  return states.find(state =>
-    state.state_name.toLowerCase() === stateName.toLowerCase()
-  ) || null;
+function getAllCounties() {
+  return loadCounties();
 }
 
+// Export functions
 module.exports = {
-  // Data
-  cities,
-  states,
-  counties,
+  // CSV Parsers
+  loadCities,
+  loadCitiesExtended,
+  loadStates,
+  loadCounties,
+  parseCSV,
 
-  // Functions
-  getAllCities,
-  getAllStates,
-  getAllCounties,
+  // Helper functions
   getCitiesByState,
   getCitiesByStateName,
-  getCountiesByState,
   searchCities,
-  getCity,
   getCitiesByZip,
-  getCitiesNearby,
-  getState,
-  getStateByName
+  getAllStates,
+  getAllCounties
 };

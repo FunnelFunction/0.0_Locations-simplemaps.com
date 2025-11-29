@@ -1,335 +1,195 @@
 # USA Cities Database
 
-A comprehensive, production-ready database of US cities, counties, and states with 31,000+ entries. Perfect for dropdowns, location lookups, ZIP code searches, and geographic applications.
+**CSV-based database of US cities, counties, and states** - 31,254 entries with detailed information. Inspired by and compatible with [grammakov/USA-cities-and-states](https://github.com/grammakov/USA-cities-and-states) format.
 
-## Features
+Perfect for dropdowns, location lookups, ZIP code searches, and geographic applications.
 
-- **31,254 US Cities** with detailed information
-- **All 50 States** plus DC and territories
-- **3,000+ Counties** organized by state
-- **Geographic Coordinates** (latitude/longitude)
-- **ZIP Codes** for each city
-- **Population & Density** data
-- **Timezone** information
-- **Multiple Formats**: JSON, minified JSON, CSV, and pipe-delimited
-- **Easy to Use**: Simple JavaScript/Node.js API
-- **TypeScript Support**: Full type definitions included
-- **Zero Dependencies**: Lightweight and fast
+## Why This Database?
 
-## Installation
+- **Same Format as Reference Repo**: Uses pipe-delimited CSV like the popular grammakov repo
+- **More Data**: Includes ZIP codes, coordinates, population, density, and timezone
+- **31,254 Cities**: Complete coverage of all US states, DC, and territories
+- **Ready to Use**: Works with any CSV parser or import directly
+- **Zero Dependencies**: Just CSV files - use with any language or framework
 
-### NPM (when published)
-```bash
-npm install usa-cities-database
-```
+## Files
 
-### Direct Use
-Clone or download this repository and import the files you need:
-```bash
-git clone https://github.com/FunnelFunction/0.0_Locations-simplemaps.com.git
-```
+| File | Size | Description | Format |
+|------|------|-------------|--------|
+| **us_cities_states_counties.csv** | 1.3 MB | Basic city data | `City\|State short\|State full\|County\|City alias` |
+| **us_cities_states_counties_zips.csv** | 2.6 MB | Extended with ZIP codes & coordinates | Adds: `Latitude\|Longitude\|ZIP codes\|Population\|Density\|Timezone` |
+| **states.csv** | 889 B | All 50 states + DC + territories | `state_id,state_name` |
+| **counties.csv** | 83 KB | All counties by state | `state_id,state_name,county_name` |
+
+### Bonus: JSON Format
+
+JSON versions available in `data/` folder for those who prefer JSON over CSV.
 
 ## Quick Start
 
-### Node.js / JavaScript
+### Option 1: Direct CSV Usage (Python Example)
+
+```python
+import csv
+
+# Read basic cities
+with open('us_cities_states_counties.csv', 'r') as f:
+    reader = csv.DictReader(f, delimiter='|')
+    cities = list(reader)
+
+# Filter cities by state
+ca_cities = [c for c in cities if c['State short'] == 'CA']
+print(f"California has {len(ca_cities)} cities")
+```
+
+### Option 2: Direct CSV Usage (JavaScript/Node.js)
 
 ```javascript
-const usaData = require('usa-cities-database');
+const fs = require('fs');
 
-// Get all cities
-const cities = usaData.getAllCities();
+// Simple CSV parser
+const data = fs.readFileSync('us_cities_states_counties.csv', 'utf-8');
+const lines = data.split('\n');
+const headers = lines[0].split('|');
 
-// Get cities in California
+const cities = lines.slice(1).map(line => {
+  const values = line.split('|');
+  return {
+    city: values[0],
+    state: values[1],
+    stateFull: values[2],
+    county: values[3]
+  };
+});
+
+// Find all cities in Texas
+const txCities = cities.filter(c => c.state === 'TX');
+```
+
+### Option 3: Use the Built-in Module
+
+```javascript
+const usaData = require('./index.js');
+
+// Load basic cities
+const cities = usaData.loadCities();
+
+// Get California cities
 const caCities = usaData.getCitiesByState('CA');
+// Returns: [{ City, State short, State full, County, City alias }, ...]
 
-// Search for cities named "Springfield"
+// Search for cities
 const springfields = usaData.searchCities('Springfield');
 
-// Get a specific city
-const city = usaData.getCity('Los Angeles', 'CA');
-console.log(city);
-// {
-//   state_name: "California",
-//   state_id: "CA",
-//   county_name: "Los Angeles",
-//   city_ascii: "Los Angeles",
-//   zips: "90001,90002,90003...",
-//   lat: "34.1141",
-//   lng: "-118.4068",
-//   population: "11885717",
-//   density: "3165.7",
-//   timezone: "America/Los_Angeles"
-// }
+// Get cities by ZIP code (uses extended data)
+const cities = usaData.getCitiesByZip('90210');
+// Returns: [{ City, State short, ..., ZIP codes, Population, ... }, ...]
 
-// Get cities by ZIP code
-const citiesWithZip = usaData.getCitiesByZip('90210');
+// Load extended data with coordinates and population
+const citiesExtended = usaData.loadCitiesExtended();
+```
 
-// Get all states
+## CSV File Formats
+
+### Basic File: `us_cities_states_counties.csv`
+
+Pipe-delimited format matching the reference repo:
+
+```
+City|State short|State full|County|City alias
+New York|NY|New York|Queens|New York
+Los Angeles|CA|California|Los Angeles|Los Angeles
+Chicago|IL|Illinois|Cook|Chicago
+```
+
+**Perfect for:**
+- Simple city/state lookups
+- Dropdown menus
+- Form validation
+- Autocomplete features
+
+### Extended File: `us_cities_states_counties_zips.csv`
+
+Includes additional fields:
+
+```
+City|State short|State full|County|Latitude|Longitude|ZIP codes|Population|Density|Timezone
+New York|NY|New York|Queens|40.6943|-73.9249|11229,11228,11226...|18832416|10943.7|America/New_York
+```
+
+**Perfect for:**
+- ZIP code lookups
+- Geographic distance calculations
+- Population analysis
+- Timezone conversion
+- Mapping applications
+
+## Real-World Examples
+
+### Example 1: State/City Dropdown
+
+```javascript
+const usaData = require('./index.js');
+
+// Populate state dropdown
 const states = usaData.getAllStates();
-
-// Get counties in Texas
-const txCounties = usaData.getCountiesByState('TX');
-```
-
-### TypeScript
-
-```typescript
-import {
-  City,
-  State,
-  County,
-  getCitiesByState,
-  searchCities,
-  getCity
-} from 'usa-cities-database';
-
-const cities: City[] = getCitiesByState('NY');
-const city: City | null = getCity('New York', 'NY');
-```
-
-### Direct File Access
-
-#### JSON Format
-```javascript
-// Full data
-const cities = require('./cities.json');
-
-// Minified (smaller file size)
-const citiesMin = require('./cities.min.json');
-
-// States only
-const states = require('./states.json');
-
-// Counties only
-const counties = require('./counties.json');
-```
-
-#### CSV Format
-```javascript
-// For use with CSV parsers
-const fs = require('fs');
-const csv = require('csv-parser');
-
-const cities = [];
-fs.createReadStream('cities.csv')
-  .pipe(csv())
-  .on('data', (row) => cities.push(row))
-  .on('end', () => console.log('CSV loaded'));
-```
-
-#### Simple Pipe-Delimited (like the reference repo)
-```
-city|state|state_name|county
-New York|NY|New York|Queens
-Los Angeles|CA|California|Los Angeles
-Chicago|IL|Illinois|Cook
-```
-
-## Available Files
-
-| File | Description | Size | Format |
-|------|-------------|------|--------|
-| `cities.json` | Full city data with all fields | 8.3 MB | JSON |
-| `cities.min.json` | Minified version (same data) | 6.3 MB | JSON |
-| `cities.csv` | All cities with all fields | 3.1 MB | CSV |
-| `cities-simple.csv` | City, state, county only | 936 KB | Pipe-delimited |
-| `states.json` | All 50 states + DC + territories | 3.1 KB | JSON |
-| `states.csv` | States in CSV format | 889 B | CSV |
-| `counties.json` | All counties by state | 283 KB | JSON |
-| `counties.csv` | Counties in CSV format | 83 KB | CSV |
-
-## API Reference
-
-### Data Arrays
-
-- `cities` - Array of all city objects
-- `states` - Array of all state objects
-- `counties` - Array of all county objects
-
-### Functions
-
-#### `getAllCities()`
-Returns all cities as an array.
-
-#### `getAllStates()`
-Returns all states as an array.
-
-#### `getAllCounties()`
-Returns all counties as an array.
-
-#### `getCitiesByState(stateId)`
-Get all cities in a state.
-- **stateId**: Two-letter state code (e.g., 'CA', 'NY')
-
-```javascript
-const caCities = getCitiesByState('CA');
-```
-
-#### `getCitiesByStateName(stateName)`
-Get all cities in a state by full name.
-- **stateName**: Full state name (e.g., 'California', 'New York')
-
-```javascript
-const caCities = getCitiesByStateName('California');
-```
-
-#### `getCountiesByState(stateId)`
-Get all counties in a state.
-- **stateId**: Two-letter state code
-
-```javascript
-const txCounties = getCountiesByState('TX');
-```
-
-#### `searchCities(cityName)`
-Search for cities by name (partial match, case-insensitive).
-
-```javascript
-const springfields = searchCities('Springfield');
-const portCities = searchCities('Port');
-```
-
-#### `getCity(cityName, stateId)`
-Get a specific city by exact name and state.
-
-```javascript
-const la = getCity('Los Angeles', 'CA');
-```
-
-#### `getCitiesByZip(zipCode)`
-Find all cities that include a specific ZIP code.
-
-```javascript
-const cities = getCitiesByZip('90210');
-```
-
-#### `getCitiesNearby(lat, lng, radiusMiles)`
-Find cities within a radius of coordinates.
-- **lat**: Latitude
-- **lng**: Longitude
-- **radiusMiles**: Radius in miles
-
-```javascript
-const nearby = getCitiesNearby(34.0522, -118.2437, 25);
-```
-
-#### `getState(stateId)`
-Get state info by ID.
-
-```javascript
-const ca = getState('CA');
-```
-
-#### `getStateByName(stateName)`
-Get state info by name.
-
-```javascript
-const ca = getStateByName('California');
-```
-
-## Data Structure
-
-### City Object
-```javascript
-{
-  state_name: "California",      // Full state name
-  state_id: "CA",                 // Two-letter state code
-  county_name: "Los Angeles",     // County name
-  city_ascii: "Los Angeles",      // City name (ASCII)
-  zips: "90001,90002,90003...",   // Comma-separated ZIP codes
-  lat: "34.1141",                 // Latitude
-  lng: "-118.4068",               // Longitude
-  population: "11885717",         // Population
-  density: "3165.7",              // Population density
-  timezone: "America/Los_Angeles" // IANA timezone
-}
-```
-
-### State Object
-```javascript
-{
-  state_id: "CA",           // Two-letter state code
-  state_name: "California"  // Full state name
-}
-```
-
-### County Object
-```javascript
-{
-  state_id: "CA",               // Two-letter state code
-  state_name: "California",     // Full state name
-  county_name: "Los Angeles"    // County name
-}
-```
-
-## Use Cases
-
-### Populate a State/City Dropdown
-```javascript
-const { getAllStates, getCitiesByState } = require('usa-cities-database');
-
-// Get states for dropdown
-const states = getAllStates();
-const stateOptions = states.map(s => ({
-  value: s.state_id,
-  label: s.state_name
-}));
+const stateOptions = states.map(s =>
+  `<option value="${s.state_id}">${s.state_name}</option>`
+).join('');
 
 // When user selects a state, populate cities
-function onStateChange(stateId) {
-  const cities = getCitiesByState(stateId);
-  const cityOptions = cities.map(c => ({
-    value: c.city_ascii,
-    label: c.city_ascii
-  }));
-  return cityOptions;
+function onStateChange(stateCode) {
+  const cities = usaData.getCitiesByState(stateCode);
+  return cities.map(c =>
+    `<option value="${c.City}">${c.City}</option>`
+  ).join('');
 }
 ```
 
-### ZIP Code Lookup
-```javascript
-const { getCitiesByZip } = require('usa-cities-database');
+### Example 2: ZIP Code to City/State Lookup
 
-function lookupZip(zipCode) {
-  const cities = getCitiesByZip(zipCode);
+```javascript
+const usaData = require('./index.js');
+
+function lookupZIP(zipCode) {
+  const cities = usaData.getCitiesByZip(zipCode);
+
   if (cities.length > 0) {
     const city = cities[0];
     return {
-      city: city.city_ascii,
-      state: city.state_id,
-      timezone: city.timezone
+      city: city.City,
+      state: city['State short'],
+      stateFull: city['State full'],
+      county: city.County,
+      lat: parseFloat(city.Latitude),
+      lng: parseFloat(city.Longitude),
+      population: parseInt(city.Population),
+      timezone: city.Timezone
     };
   }
+
   return null;
 }
 
-const info = lookupZip('10001');
-// { city: "New York", state: "NY", timezone: "America/New_York" }
+const info = lookupZIP('90210');
+// { city: "Los Angeles", state: "CA", timezone: "America/Los_Angeles", ... }
 ```
 
-### Find Nearby Cities
+### Example 3: City Search/Autocomplete
+
 ```javascript
-const { getCitiesNearby } = require('usa-cities-database');
+const usaData = require('./index.js');
 
-// Find cities within 50 miles of a location
-const userLat = 40.7128;
-const userLng = -74.0060;
-const nearbyCities = getCitiesNearby(userLat, userLng, 50);
+function autocomplete(searchTerm) {
+  if (searchTerm.length < 2) return [];
 
-console.log(`Found ${nearbyCities.length} cities nearby`);
-```
+  const results = usaData.searchCities(searchTerm);
 
-### Autocomplete Search
-```javascript
-const { searchCities } = require('usa-cities-database');
-
-function autocomplete(query) {
-  if (query.length < 2) return [];
-
-  const results = searchCities(query);
   return results.slice(0, 10).map(city => ({
-    label: `${city.city_ascii}, ${city.state_id}`,
-    value: city
+    label: `${city.City}, ${city['State short']}`,
+    value: city.City,
+    state: city['State short'],
+    county: city.County
   }));
 }
 
@@ -337,100 +197,247 @@ const suggestions = autocomplete('San');
 // Returns: San Francisco, San Diego, San Antonio, etc.
 ```
 
-## Browser Usage
+### Example 4: Find Cities in a County
 
-### Using a Bundler (Webpack, Rollup, Vite)
 ```javascript
-import { getCitiesByState, searchCities } from 'usa-cities-database';
+const cities = usaData.loadCities();
 
-const cities = getCitiesByState('CA');
+// Get all cities in Los Angeles County
+const laCities = cities.filter(c =>
+  c.County === 'Los Angeles' && c['State short'] === 'CA'
+);
+
+console.log(`Los Angeles County has ${laCities.length} cities`);
 ```
 
-### Direct Script Tag
-```html
-<script src="path/to/cities.json"></script>
-<script>
-  // Access the data
-  console.log(cities);
-</script>
+### Example 5: Parse CSV in Python
+
+```python
+import csv
+
+def get_cities_by_state(state_code):
+    cities = []
+    with open('us_cities_states_counties.csv', 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f, delimiter='|')
+        for row in reader:
+            if row['State short'] == state_code:
+                cities.append(row)
+    return cities
+
+# Get all California cities
+ca_cities = get_cities_by_state('CA')
+print(f"Found {len(ca_cities)} cities in California")
 ```
 
-### Fetch API
+### Example 6: Load in React/Next.js
+
 ```javascript
-fetch('path/to/cities.json')
-  .then(response => response.json())
-  .then(cities => {
-    console.log('Loaded', cities.length, 'cities');
-  });
+import { useState, useEffect } from 'react';
+
+function CitySelector() {
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [selectedState, setSelectedState] = useState('');
+
+  useEffect(() => {
+    // Load CSV file
+    fetch('/us_cities_states_counties.csv')
+      .then(res => res.text())
+      .then(csv => {
+        const lines = csv.split('\n');
+        const data = lines.slice(1).map(line => {
+          const [city, state, stateFull, county] = line.split('|');
+          return { city, state, stateFull, county };
+        });
+
+        // Get unique states
+        const uniqueStates = [...new Set(data.map(d => d.state))];
+        setStates(uniqueStates);
+      });
+  }, []);
+
+  const handleStateChange = (state) => {
+    setSelectedState(state);
+    // Filter cities for selected state
+    // ...
+  };
+
+  return (
+    <div>
+      <select onChange={(e) => handleStateChange(e.target.value)}>
+        {states.map(state => (
+          <option key={state} value={state}>{state}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
 ```
 
-## Performance Tips
+## API Reference (Node.js Module)
 
-1. **Use Minified JSON** (`cities.min.json`) for smaller bundle size
-2. **Use CSV** if you're parsing it anyway or need smaller size
-3. **Use Simple CSV** (`cities-simple.csv`) if you only need basic info
-4. **Import Only What You Need**:
-   ```javascript
-   // Instead of importing all cities
-   const states = require('usa-cities-database/states.json');
-   const counties = require('usa-cities-database/counties.json');
-   ```
+### Basic Functions
 
-## Data Source
+#### `loadCities()`
+Load basic city data (pipe-delimited format).
 
-Data sourced from **SimpleMaps.com** - US Cities Database (Basic)
-- Source: https://simplemaps.com/data/us-cities
+```javascript
+const cities = usaData.loadCities();
+// Returns: [{ City, State short, State full, County, City alias }, ...]
+```
+
+#### `loadCitiesExtended()`
+Load extended city data with ZIP codes, coordinates, and population.
+
+```javascript
+const cities = usaData.loadCitiesExtended();
+// Returns: [{ City, ..., Latitude, Longitude, ZIP codes, Population, ... }, ...]
+```
+
+#### `getCitiesByState(stateCode)`
+Get all cities in a state.
+
+```javascript
+const txCities = usaData.getCitiesByState('TX');
+```
+
+#### `getCitiesByStateName(stateName)`
+Get cities by full state name.
+
+```javascript
+const txCities = usaData.getCitiesByStateName('Texas');
+```
+
+#### `searchCities(searchTerm)`
+Search cities by name (partial match).
+
+```javascript
+const results = usaData.searchCities('Spring');
+```
+
+#### `getCitiesByZip(zipCode)`
+Find cities containing a ZIP code.
+
+```javascript
+const cities = usaData.getCitiesByZip('90210');
+```
+
+#### `getAllStates()` / `getAllCounties()`
+Get lists of states or counties.
+
+```javascript
+const states = usaData.getAllStates();
+const counties = usaData.getAllCounties();
+```
+
+#### `parseCSV(filename)`
+Parse any pipe-delimited CSV file.
+
+```javascript
+const data = usaData.parseCSV('your_file.csv');
+```
+
+## Data Coverage
+
+- **31,254** cities
+- **52** states (50 states + DC + territories)
+- **3,207** counties
+- **All ZIP codes** included in extended file
+- **Coverage**: All 50 US states, District of Columbia, Puerto Rico, and territories
+
+## File Structure
+
+```
+.
+├── us_cities_states_counties.csv       # Main file (basic data)
+├── us_cities_states_counties_zips.csv  # Extended file (with ZIP codes)
+├── states.csv                           # All states
+├── counties.csv                         # All counties
+├── index.js                             # Node.js module
+├── index.d.ts                           # TypeScript definitions
+├── test.js                              # Test suite
+├── package.json                         # NPM package config
+└── data/                                # Bonus: JSON format files
+    ├── cities.json
+    ├── cities.min.json
+    └── ...
+```
+
+## Installation
+
+### Clone Repository
+
+```bash
+git clone https://github.com/FunnelFunction/0.0_Locations-simplemaps.com.git
+cd 0.0_Locations-simplemaps.com
+```
+
+### Use in Your Project
+
+**Option 1:** Copy the CSV files you need
+
+```bash
+cp us_cities_states_counties.csv /your-project/
+```
+
+**Option 2:** Install as npm package (when published)
+
+```bash
+npm install usa-cities-database
+```
+
+**Option 3:** Use as git submodule
+
+```bash
+git submodule add https://github.com/FunnelFunction/0.0_Locations-simplemaps.com.git
+```
+
+## Testing
+
+```bash
+node test.js
+```
+
+All tests pass successfully!
+
+## Data Source & License
+
+**Source:** SimpleMaps.com - US Cities Database (Basic)
+- URL: https://simplemaps.com/data/us-cities
 - License: Creative Commons Attribution 4.0 International (CC BY 4.0)
-- Full license: https://creativecommons.org/licenses/by/4.0/
+- License URL: https://creativecommons.org/licenses/by/4.0/
 
-You are free to use this data for commercial or personal projects as long as you maintain attribution.
+**Attribution Required:** When using this data, you must give appropriate credit to SimpleMaps.com
 
 ## License
 
-**Creative Commons Attribution 4.0 International (CC BY 4.0)**
+This database is licensed under **Creative Commons Attribution 4.0 International (CC BY 4.0)**.
 
 You are free to:
-- **Share**: Copy and redistribute the material in any medium or format
-- **Adapt**: Remix, transform, and build upon the material for any purpose, even commercially
+- Share and redistribute in any medium or format
+- Adapt, remix, transform, and build upon the material for any purpose (commercial or non-commercial)
 
 Under the following terms:
 - **Attribution**: You must give appropriate credit to SimpleMaps.com
 
-See [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Changelog
-
-### Version 1.0.0
-- Initial release with 31,254 cities
-- Multiple format support (JSON, CSV, pipe-delimited)
-- Full JavaScript API with helper functions
-- TypeScript definitions
-- Comprehensive documentation
-
-## Support
-
-If you encounter any issues or have questions:
-1. Check the documentation above
-2. Search existing issues on GitHub
-3. Open a new issue if needed
+See [LICENSE](LICENSE) file for full details.
 
 ## Similar Projects
 
-Inspired by [grammakov/USA-cities-and-states](https://github.com/grammakov/USA-cities-and-states)
+- Inspired by: [grammakov/USA-cities-and-states](https://github.com/grammakov/USA-cities-and-states)
+- This repo uses the same CSV format but includes extended data
 
-## Stats
+## Contributing
 
-- **31,254** cities
-- **51** states (including DC)
-- **3,000+** counties
-- **Coverage**: All 50 US states, District of Columbia, and territories
-- **Data Points**: ~10 fields per city
-- **Last Updated**: 2024
+Contributions welcome! Please submit a Pull Request.
+
+## Support
+
+Found a bug or have a question?
+1. Check the documentation above
+2. Search existing issues
+3. Open a new issue on GitHub
 
 ---
 
-**Made with data from SimpleMaps.com**
+**Made with data from SimpleMaps.com** | **31,254 cities** | **CSV format** | **Production ready**
