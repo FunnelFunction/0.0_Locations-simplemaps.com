@@ -1,0 +1,44 @@
+{
+  "name": "usa-cities-database",
+  "version": "1.0.0",
+  "description": "Comprehensive US cities, counties, and states database with 31,000+ entries including coordinates, ZIP codes, population, and timezone data",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "keywords": [
+    "usa",
+    "cities",
+    "states",
+    "counties",
+    "zip codes",
+    "coordinates",
+    "population",
+    "timezone",
+    "location",
+    "geodata",
+    "geographic",
+    "simplemaps"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FunnelFunction/0.0_Locations-simplemaps.com.git"
+  },
+  "author": "",
+  "license": "CC-BY-4.0",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "cities.json",
+    "cities.min.json",
+    "cities.csv",
+    "cities-simple.csv",
+    "states.json",
+    "states.csv",
+    "counties.json",
+    "counties.csv",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node test.js"
+  }
+}
